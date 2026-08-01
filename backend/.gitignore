@@ -1,3 +1,13 @@
 node_modules 
 .env
+.env.*
+!.env.example
 README.md
+
+# Private keys & secrets - NEVER commit these
+*.pk
+*.pem
+*.key
+*.p12
+*.pfx
+barter.pk
