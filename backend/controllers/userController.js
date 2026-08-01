@@ -1,4 +1,5 @@
 import { User, Skill } from '../models/index.js';
+import { sequelize } from '../db/index.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -20,23 +21,36 @@ const updateProfile = asyncHandler(async (req, res) => {
     const { bio, skillsToTeach, skillsToLearn } = req.body;
     const user = await User.findByPk(req.user.id);
 
-    if (bio) user.bio = bio;
-    await user.save();
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
 
-    if (skillsToTeach || skillsToLearn) {
-        // Remove old skills
-        await Skill.destroy({ where: { userId: user.id } });
+    // Replace bio + skills atomically so a failure can't wipe data partway.
+    const transaction = await sequelize.transaction();
+    try {
+        if (bio !== undefined) user.bio = bio;
+        await user.save({ transaction });
 
-        const newSkills = [];
-        if (skillsToTeach && Array.isArray(skillsToTeach)) {
-            skillsToTeach.forEach(name => newSkills.push({ userId: user.id, name, type: 'TEACH' }));
+        if (skillsToTeach || skillsToLearn) {
+            // Remove old skills
+            await Skill.destroy({ where: { userId: user.id }, transaction });
+
+            const newSkills = [];
+            if (skillsToTeach && Array.isArray(skillsToTeach)) {
+                skillsToTeach.forEach(name => newSkills.push({ userId: user.id, name: name.trim(), type: 'TEACH' }));
+            }
+            if (skillsToLearn && Array.isArray(skillsToLearn)) {
+                skillsToLearn.forEach(name => newSkills.push({ userId: user.id, name: name.trim(), type: 'LEARN' }));
+            }
+            if (newSkills.length > 0) {
+                await Skill.bulkCreate(newSkills, { transaction });
+            }
         }
-        if (skillsToLearn && Array.isArray(skillsToLearn)) {
-            skillsToLearn.forEach(name => newSkills.push({ userId: user.id, name, type: 'LEARN' }));
-        }
-        if (newSkills.length > 0) {
-            await Skill.bulkCreate(newSkills);
-        }
+
+        await transaction.commit();
+    } catch (error) {
+        await transaction.rollback();
+        throw error;
     }
 
     const updatedUser = await User.findByPk(req.user.id, {

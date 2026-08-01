@@ -1,5 +1,6 @@
 import { Session, User, Skill, Review } from '../models/index.js';
 import { Op } from 'sequelize';
+import { sequelize } from '../db/index.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -56,26 +57,49 @@ const updateSessionStatus = asyncHandler(async (req, res) => {
         throw new ApiError(403, "Unauthorized to update this session");
     }
 
-    if (status === 'COMPLETED' && session.status !== 'COMPLETED') {
-        const learner = await User.findByPk(session.learnerId);
-        const teacher = await User.findByPk(session.teacherId);
-        
-        // Calculate credits based on duration (1 credit per minute, or 60 per hour)
-        // Default to 60 if duration not provided or very short (minimum charge)
-        const duration = actualDuration && actualDuration > 10 ? actualDuration : 60;
-        const creditsToTransfer = duration; // 1 credit per minute logic
+    if (status === 'COMPLETED') {
+        // Credit transfer must be atomic to avoid double-spending and negative balances.
+        const transaction = await sequelize.transaction();
+        try {
+            const lockedSession = await Session.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
 
-        if (learner.credits < creditsToTransfer) {
-             // In a strict system, we might block. 
-             // Here we might allow negative or just zero out.
-             // For now, let's just proceed or throw error.
-             if (learner.credits < 1) throw new ApiError(400, "Learner has insufficient credits");
+            if (!lockedSession) {
+                throw new ApiError(404, "Session not found");
+            }
+            if (lockedSession.status === 'COMPLETED') {
+                throw new ApiError(400, "Session is already completed");
+            }
+            if (lockedSession.status === 'CANCELLED') {
+                throw new ApiError(400, "Cannot complete a cancelled session");
+            }
+
+            const learner = await User.findByPk(lockedSession.learnerId, { transaction, lock: transaction.LOCK.UPDATE });
+            const teacher = await User.findByPk(lockedSession.teacherId, { transaction, lock: transaction.LOCK.UPDATE });
+
+            // Calculate credits based on duration (1 credit per minute, or 60 per hour)
+            // Default to 60 if duration not provided or very short (minimum charge)
+            const duration = actualDuration && actualDuration > 10 ? actualDuration : 60;
+            const creditsToTransfer = duration; // 1 credit per minute logic
+
+            // Never allow the learner to go negative
+            if (!learner || learner.credits < creditsToTransfer) {
+                throw new ApiError(400, "Learner has insufficient credits");
+            }
+
+            await learner.decrement('credits', { by: creditsToTransfer, transaction });
+            await teacher.increment('credits', { by: creditsToTransfer, transaction });
+
+            lockedSession.status = status;
+            await lockedSession.save({ transaction });
+
+            await transaction.commit();
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
         }
 
-        await learner.decrement('credits', { by: creditsToTransfer });
-        await teacher.increment('credits', { by: creditsToTransfer });
-        
-        // Update session duration info if needed (assuming migration to add actualDuration column exists, or just log it)
+        res.json(new ApiResponse(200, await Session.findByPk(id), "Session status updated"));
+        return;
     }
 
     if (status === 'SCHEDULED' && session.status !== 'SCHEDULED' && !session.meetingLink) {
@@ -142,6 +166,11 @@ const addReview = asyncHandler(async (req, res) => {
         throw new ApiError(403, "Not a participant of this session");
     }
 
+    const existingReview = await Review.findOne({ where: { sessionId } });
+    if (existingReview) {
+        throw new ApiError(409, "A review already exists for this session");
+    }
+
     const review = await Review.create({
         sessionId,
         reviewerId: req.user.id,
@@ -176,7 +205,11 @@ const generateJitsiToken = asyncHandler(async (req, res) => {
 
     // Base room name (without tenant prefix)
     const rawRoomName = `SkillSwap-${sessionId}`;
-    
+    // Scope the token to the specific room instead of '*' (no cross-room access)
+    const finalRoomName = process.env.JAAS_APP_ID
+      ? `${process.env.JAAS_APP_ID}/${rawRoomName}`
+      : rawRoomName;
+
     // For JaaS, the payload must be carefully structured
     const payload = {
         context: {
@@ -197,29 +230,23 @@ const generateJitsiToken = asyncHandler(async (req, res) => {
         aud: 'jitsi',
         iss: 'chat',
         sub: process.env.JAAS_APP_ID,
-        room: '*', // Wildcard room access for simplicity in the token
+        room: finalRoomName,
         exp: exp,
         nbf: nbf
     };
 
     let token;
-    let finalRoomName = rawRoomName;
 
     try {
         if (process.env.JAAS_PRIVATE_KEY_PATH) {
              const privateKey = fs.readFileSync(process.env.JAAS_PRIVATE_KEY_PATH);
-             
-             token = jwt.sign(payload, privateKey, { 
-                 algorithm: 'RS256', 
-                 header: { kid: process.env.JAAS_API_KEY_ID } 
-             });
 
-             // When using JaaS, meaningful room names are Tenant/RoomName
-             // If we don't use the tenant prefix, JaaS might reject or put us in a different namespace
-             // Using the AppID as the tenant identifier
-             finalRoomName = `${process.env.JAAS_APP_ID}/${rawRoomName}`;
+             token = jwt.sign(payload, privateKey, {
+                 algorithm: 'RS256',
+                 header: { kid: process.env.JAAS_API_KEY_ID }
+             });
         } else {
-             token = null; 
+             token = null;
         }
     } catch (error) {
         console.error("Error signing Jitsi token:", error);
