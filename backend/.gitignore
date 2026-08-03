@@ -11,3 +11,10 @@ README.md
 *.p12
 *.pfx
 barter.pk
+
+# Prisma
+skills-lock.json
+
+# Local agent config
+.agents
+.claude

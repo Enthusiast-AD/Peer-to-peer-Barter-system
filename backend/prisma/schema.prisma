@@ -1,0 +1,247 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SkillType {
+  TEACH
+  LEARN
+
+  @@map("enum_Skills_type")
+}
+
+enum SessionStatus {
+  PENDING
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+
+  @@map("enum_Sessions_status")
+}
+
+enum SessionMode {
+  BARTER
+  CREDITS
+
+  @@map("enum_Sessions_mode")
+}
+
+enum ProposalStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+
+  @@map("enum_TimeProposals_status")
+}
+
+enum ReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("enum_NoShowReports_status")
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(255)
+  email     String   @unique @db.VarChar(255)
+  password  String?  @db.VarChar(255)
+  googleId  String?  @unique @db.VarChar(255)
+  credits   Int?     @default(60)
+  bio       String?
+  avatar    String?  @db.VarChar(255)
+  warnings  Int      @default(0)
+  banned    Boolean  @default(false)
+  bannedAt  DateTime? @db.Timestamptz(6)
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  skills           Skill[]
+  teachingSessions Session[] @relation("Sessions_teacherIdToUsers")
+  learningSessions Session[] @relation("Sessions_learnerIdToUsers")
+  receivedReviews  Review[]  @relation("Reviews_revieweeIdToUsers")
+  writtenReviews   Review[]  @relation("Reviews_reviewerIdToUsers")
+  sentMessages     ChatMessage[] @relation("ChatMessages_senderIdToUsers")
+  proposedTimes    TimeProposal[] @relation("TimeProposals_proposedByIdToUsers")
+  respondedTimes   TimeProposal[] @relation("TimeProposals_respondedByIdToUsers")
+  availabilitySlots AvailabilitySlot[]
+  notifications    Notification[]
+  lastReadMessages SessionRead[] @relation("SessionReads_userIdToUsers")
+
+  @@map("Users")
+}
+
+model Skill {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  name      String    @db.VarChar(255)
+  type      SkillType
+  category  String?   @db.VarChar(255)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions Session[]
+
+  @@index([name])
+  @@map("Skills")
+}
+
+model Session {
+  id                    String        @id @default(uuid()) @db.Uuid
+  teacherId             String        @db.Uuid
+  learnerId             String        @db.Uuid
+  skillId               String?       @db.Uuid
+  topic                 String        @db.VarChar(255)
+  status                SessionStatus @default(PENDING)
+  mode                  SessionMode   @default(BARTER)
+  scheduledAt           DateTime?     @db.Timestamptz(6)
+  durationMinutes       Int?          @default(60)
+  creditsReserved       Int?          @default(0)
+  meetingLink           String?       @db.VarChar(255)
+  startedAt             DateTime?     @db.Timestamptz(6)
+  endedAt               DateTime?     @db.Timestamptz(6)
+  actualDurationMinutes Int?
+  noShowUserId          String?       @db.Uuid
+  noShowReportedById    String?       @db.Uuid
+  noShowReportedAt      DateTime?     @db.Timestamptz(6)
+  reminderSentAt        DateTime?     @db.Timestamptz(6)
+  createdAt             DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime      @updatedAt @db.Timestamptz(6)
+
+  teacher User            @relation("Sessions_teacherIdToUsers", fields: [teacherId], references: [id], onDelete: Cascade)
+  learner User            @relation("Sessions_learnerIdToUsers", fields: [learnerId], references: [id], onDelete: Cascade)
+  skill   Skill?          @relation(fields: [skillId], references: [id])
+  reviews Review[]
+  messages ChatMessage[]
+  proposals TimeProposal[]
+  reads   SessionRead[]
+  noShowReport NoShowReport?
+
+  @@map("Sessions")
+}
+
+model Review {
+  id         String   @id @default(uuid()) @db.Uuid
+  sessionId  String   @db.Uuid
+  reviewerId String   @db.Uuid
+  revieweeId String   @db.Uuid
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+
+  session  Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  reviewer User    @relation("Reviews_reviewerIdToUsers", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewee User    @relation("Reviews_revieweeIdToUsers", fields: [revieweeId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, reviewerId])
+  @@map("Reviews")
+}
+
+// Tracks which session messages a user has already read (for unread counts).
+model SessionRead {
+  id        String   @id @default(uuid()) @db.Uuid
+  sessionId String   @db.Uuid
+  userId    String   @db.Uuid
+  lastReadAt DateTime @default(now()) @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation("SessionReads_userIdToUsers", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@map("SessionReads")
+}
+
+// Recurring availability slots (day of week + start/end time).
+model AvailabilitySlot {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  dayOfWeek Int    @db.SmallInt // 0=Sunday .. 6=Saturday
+  startTime String @db.VarChar(5) // "HH:mm" 24h
+  endTime   String @db.VarChar(5) // "HH:mm" 24h
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("AvailabilitySlots")
+}
+
+// In-app notifications.
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  type      String   @db.VarChar(50) // session_request, session_accepted, message, proposal, review, system
+  title     String   @db.VarChar(255)
+  body      String?  @db.Text
+  link      String?  @db.VarChar(255)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("Notifications")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  sessionId String   @db.Uuid
+  senderId  String   @db.Uuid
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender  User    @relation("ChatMessages_senderIdToUsers", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@map("ChatMessages")
+}
+
+model TimeProposal {
+  id            String         @id @default(uuid()) @db.Uuid
+  sessionId     String         @db.Uuid
+  proposedById  String         @db.Uuid
+  proposedAt    DateTime       @db.Timestamptz(6)
+  status        ProposalStatus @default(PENDING)
+  respondedById String?        @db.Uuid
+  respondedAt   DateTime?      @db.Timestamptz(6)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
+
+  session    Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  proposedBy User    @relation("TimeProposals_proposedByIdToUsers", fields: [proposedById], references: [id], onDelete: Cascade)
+  respondedBy User?  @relation("TimeProposals_respondedByIdToUsers", fields: [respondedById], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, status])
+  @@map("TimeProposals")
+}
+
+// A no-show report filed by a session organizer (teacher). Admin reviews it
+// before any warning/ban is applied.
+model NoShowReport {
+  id           String       @id @default(uuid()) @db.Uuid
+  sessionId    String       @unique @db.Uuid
+  reportedBy   String       @db.Uuid
+  reportedUser String       @db.Uuid
+  reason       String?      @db.Text
+  status       ReportStatus @default(PENDING)
+  reviewedBy   String?      @db.Uuid
+  reviewedAt   DateTime?    @db.Timestamptz(6)
+  createdAt    DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime     @updatedAt @db.Timestamptz(6)
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("NoShowReports")
+}
