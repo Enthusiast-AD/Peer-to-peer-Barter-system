@@ -1,8 +1,8 @@
-# SkillSwap - Student Skill Barter System
+# Peersy - Student Skill Barter System
 
-SkillSwap is a peer-to-peer skill exchange platform designed for students. It facilitates the sharing of knowledge without monetary transactions, allowing users to teach a skill they possess in exchange for learning something new.
+Peersy is a peer-to-peer skill exchange platform designed for students. It facilitates the sharing of knowledge without monetary transactions, allowing users to teach a skill they possess in exchange for learning something new.
 
-![SkillSwap Banner](client/src/assets/banner.svg)
+![Peersy Banner](client/src/assets/banner.svg)
 
 ## 🚀 Features
 
@@ -27,9 +27,9 @@ SkillSwap is a peer-to-peer skill exchange platform designed for students. It fa
 ### Server
 -   **Runtime**: [Node.js](https://nodejs.org/)
 -   **Framework**: [Express.js](https://expressjs.com/)
--   **Database**: [PostgreSQL](https://www.postgresql.org/) with [Sequelize ORM](https://sequelize.org/)
+-   **Database**: [PostgreSQL](https://www.postgresql.org/) with [Prisma ORM](https://www.prisma.io/)
 -   **Authentication**: [Passport.js](https://www.passportjs.org/) (Google Strategy), JWT
--   **Video**: Jitsi Meet Integration
+-   **Video**: [LiveKit](https://livekit.io/) (open-source, self-hostable)
 
 ## 📦 Installation
 
@@ -44,8 +44,8 @@ To get a local copy up and running, follow these simple steps.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/skillswap.git
-cd skillswap
+git clone https://github.com/yourusername/peersy.git
+cd peersy
 ```
 
 ### 2. Backend Setup
@@ -63,11 +63,22 @@ Create a `.env` file in the `backend` directory based on the `.env.example` (or 
 
 ```env
 PORT=8000
-DATABASE_URL=postgres://user:password@localhost:5432/skillswap_db
-JWT_SECRET=your_jwt_secret_key
+DATABASE_URL=postgres://user:password@localhost:5432/peersy_db
+JWT_SECRET=your_long_random_jwt_secret
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 CLIENT_URL=http://localhost:5173
+
+# LiveKit (required for video sessions) - get from https://cloud.livekit.io
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_api_secret
+```
+
+Run database migrations and generate the Prisma client:
+
+```bash
+npm run db:generate
+npm run db:migrate
 ```
 
 Start the backend server:
@@ -92,7 +103,8 @@ pnpm install
 Create a `.env` file in the `client` directory:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000/api
+VITE_API_URL=http://localhost:8000/api
+VITE_LIVEKIT_URL=wss://your-project.livekit.cloud
 ```
 
 Start the development server:
