@@ -54,9 +54,9 @@ export default function LoginPage() {
              whileHover={{ scale: 1.05 }}
              className="w-16 h-16 rounded-2xl flex items-center justify-center relative overflow-hidden"
            >
-             <img src="/logo.svg" alt="SkillSwap" className="w-full h-full object-contain" />
+             <img src="/peersyLogo.png" alt="Peersy" className="w-full h-full object-contain" />
            </motion.div>
-           <span className="text-2xl font-medium tracking-tight text-white hover:text-neutral-200 transition-colors">SkillSwap</span>
+           <span className="text-2xl font-medium tracking-tight text-white hover:text-neutral-200 transition-colors">Peersy</span>
         </Link>
         
         <div className="rounded-2xl border border-neutral-800 bg-[#0A0A0B] p-10 shadow-2xl relative overflow-hidden">

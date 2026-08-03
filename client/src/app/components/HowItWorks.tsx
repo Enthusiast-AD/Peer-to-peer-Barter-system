@@ -129,7 +129,7 @@ export function HowItWorks() {
           className="mb-16"
         >
           <h2 className="text-4xl md:text-5xl font-medium tracking-tight text-white mb-6">
-            Get started with SkillSwap
+            Get started with Peersy
           </h2>
         </motion.div>
 

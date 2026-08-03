@@ -35,7 +35,7 @@ export default function TermsOfService() {
                 1. Acceptance of Terms
               </h2>
               <p className="text-neutral-400 text-lg leading-relaxed">
-                By accessing or using SkillSwap, you agree to comply with and
+                By accessing or using Peersy, you agree to comply with and
                 be bound by these Terms of Service. This platform is designed
                 strictly for student skill exchange and knowledge sharing.
               </p>
