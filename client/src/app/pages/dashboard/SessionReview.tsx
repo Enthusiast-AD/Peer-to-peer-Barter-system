@@ -18,6 +18,14 @@ export default function SessionReview() {
   
   const durationCompleted = parseInt(searchParams.get('duration') || '0');
 
+  // Mark the session completed so credits settle. Used by both submit and skip.
+  const completeSession = async () => {
+    await api.put(`/sessions/${sessionId}`, {
+      status: 'COMPLETED',
+      actualDuration: durationCompleted
+    });
+  };
+
   const handleSubmit = async () => {
     if (rating === 0) {
         toast.error("Please select a rating");
@@ -26,40 +34,51 @@ export default function SessionReview() {
 
     setLoading(true);
     try {
-        // Mark session as completed with actual duration
-        await api.put(`/sessions/${sessionId}`, { 
-            status: 'COMPLETED',
-            actualDuration: durationCompleted 
-        });
-        
-        // Add review (assuming endpoint exists, or just log success for now)
-        // await api.post(`/sessions/${sessionId}/reviews`, { rating, comment });
-        
+        await completeSession();
+
+        // Submit the review to the review endpoint
+        if (rating > 0) {
+            await api.post(`/sessions/${sessionId}/review`, { rating, comment });
+        }
+
         toast.success("Session completed and review submitted!");
         navigate('/dashboard/credits');
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
-        toast.error("Something went wrong");
+        toast.error(error.response?.data?.message || "Something went wrong");
     } finally {
         setLoading(false);
     }
   };
 
+  const handleSkip = async () => {
+    setLoading(true);
+    try {
+      await completeSession();
+      toast.success("Session completed!");
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Something went wrong");
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
-       <motion.div 
-         initial={{ opacity: 0, scale: 0.95 }}
+       <motion.div
+         initial={{ opacity: 0, scale: 0.97 }}
          animate={{ opacity: 1, scale: 1 }}
-         className="max-w-md w-full bg-neutral-900/40 backdrop-blur-xl border border-neutral-800 rounded-2xl p-8 shadow-2xl"
+         className="max-w-md w-full bg-card border border-border rounded-2xl p-8"
        >
             <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-8 h-8 text-green-500" />
+                <div className="w-14 h-14 bg-accent/10 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-7 h-7 text-accent" />
                 </div>
             </div>
-            
-            <h2 className="text-2xl font-bold text-center mb-2">Session Completed!</h2>
-            <p className="text-neutral-400 text-center mb-8">
+
+            <h2 className="text-xl font-semibold tracking-tight text-center mb-2">Session completed</h2>
+            <p className="text-muted-foreground text-sm text-center mb-8">
                 How was your experience? Your feedback helps the community grow.
             </p>
 
@@ -73,37 +92,38 @@ export default function SessionReview() {
                         onMouseLeave={() => setHoveredRating(0)}
                         className="p-1 transition-transform hover:scale-110"
                     >
-                        <Star 
-                            className={`w-8 h-8 ${(hoveredRating || rating) >= star ? 'text-yellow-400 fill-yellow-400' : 'text-neutral-600'}`} 
+                        <Star
+                            className={`w-8 h-8 ${(hoveredRating || rating) >= star ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/40'}`}
                         />
                     </button>
                 ))}
             </div>
 
             <div className="space-y-4 mb-8">
-                <label className="text-sm font-medium text-neutral-300 flex items-center gap-2">
+                <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     <MessageSquare className="w-4 h-4" />
-                    Additional Feedback
+                    Additional feedback
                 </label>
                 <Textarea
                     placeholder="Share details about your session..."
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    className="bg-neutral-900/60 border-neutral-800 min-h-[100px]"
+                    className="min-h-[100px]"
                 />
             </div>
 
-            <Button 
-                onClick={handleSubmit} 
+            <Button
+                onClick={handleSubmit}
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary py-6 text-lg font-semibold"
+                className="w-full"
             >
-                {loading ? 'Submitting...' : 'Submit Review'}
+                {loading ? 'Submitting...' : 'Submit review'}
             </Button>
-            
+
             <button
-                onClick={() => navigate('/dashboard')}
-                className="w-full mt-4 text-sm text-neutral-500 hover:text-white transition-colors"
+                onClick={handleSkip}
+                disabled={loading}
+                className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
                 Skip feedback
             </button>

@@ -1,200 +1,259 @@
 import { useState, useEffect } from 'react';
-import { motion } from "motion/react";
-import { Coins, Users, Video, TrendingUp, Sparkles, Calendar, ArrowRight, Clock } from "lucide-react";
+import { Coins, Video, Clock, ArrowRight, Calendar, Scale, MessageSquare } from "lucide-react";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import { useAuth } from "../../context/AuthContext";
 import { Link } from 'react-router-dom';
 import api from "../../services/api";
+import { format } from 'date-fns';
+
+interface Session {
+  id: string;
+  status: 'PENDING' | 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  mode: 'BARTER' | 'CREDITS';
+  topic: string;
+  scheduledAt?: string | null;
+  durationMinutes?: number;
+  teacherId?: string;
+  learnerId?: string;
+  teacher?: { id: string; name: string; avatar?: string };
+  learner?: { id: string; name: string; avatar?: string };
+}
 
 export default function DashboardHome() {
   const { user } = useAuth();
-  const [sessions, setSessions] = useState([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchSessions = async () => {
+    const fetchData = async () => {
       try {
-        const response = await api.get('/sessions');
-        if (response.data.success) {
-          setSessions(response.data.data);
-        }
+        const res = await api.get('/sessions');
+        if (res.data.success) setSessions(res.data.data);
       } catch (error) {
         console.error("Failed to fetch sessions", error);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchSessions();
+    fetchData();
   }, []);
 
-  const completedSessions = sessions.filter((s:any) => s.status === 'COMPLETED').length;
-  const activeMatches = sessions.filter((s:any) => s.status === 'PENDING' || s.status === 'SCHEDULED');
-  const upcomingSession = sessions.find((s:any) => s.status === 'SCHEDULED');
+  const completedCount = sessions.filter((s) => s.status === 'COMPLETED').length;
+  const scheduledCount = sessions.filter((s) => s.status === 'SCHEDULED').length;
+  const pendingCount = sessions.filter((s) => s.status === 'PENDING').length;
+  const earnedCount = sessions.filter((s) => s.status === 'COMPLETED' && s.teacherId === user?.id).length * 60;
+  const spentCount = sessions.filter((s) => s.status === 'COMPLETED' && s.learnerId === user?.id).length * 60;
+  const upcoming = sessions.find((s) => s.status === 'SCHEDULED');
+  const pending = pendingCount;
+  const isTeacher = (s: Session) => s.teacher?.id === user?.id;
 
-  const stats = [
-    { icon: Coins, label: "Total Credits", value: user?.credits || 0, change: "+12%" },
-    { icon: Users, label: "Active Sessions", value: activeMatches.length, change: "Current" },
-    { icon: Video, label: "Completed", value: completedSessions, change: "All time" },
-    { icon: TrendingUp, label: "Profile Views", value: "25", change: "This week" },
-  ];
+  const recentSessions = [...sessions].slice(0, 4);
 
   return (
-    <div className="max-w-7xl mx-auto p-8 space-y-8">
-      {/* Hero Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, {user?.name?.split(' ')[0]}
+    <div className="space-y-10">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+            {new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening'}, {user?.name?.split(' ')[0]}
           </h1>
-          <p className="text-muted-foreground mt-1">Ready to learn something new today?</p>
-        </motion.div>
-        <div className="flex gap-3">
-          <Button variant="outline" className="gap-2">
-            <Calendar className="w-4 h-4" /> Schedule
+          <p className="text-muted-foreground mt-1.5 text-[15px]">
+            {upcoming ? 'You have a session coming up.' : pending > 0 ? `${pending} request${pending > 1 ? 's' : ''} awaiting a response.` : 'Ready for your next session?'}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link to="/dashboard/sessions"><Calendar className="w-4 h-4" /> Sessions</Link>
           </Button>
-          <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
-            <Sparkles className="w-4 h-4" /> Find Match
+          <Button asChild>
+            <Link to="/dashboard/matching">Find Match <ArrowRight className="w-4 h-4" /></Link>
           </Button>
         </div>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Card className="p-5 border-border/50 bg-card/60 backdrop-blur-sm hover:border-border transition-all">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-2 bg-secondary/10 rounded-lg text-primary">
-                    <Icon className="w-5 h-5" />
+      {/* Stats */}
+      <div className="grid lg:grid-cols-3 gap-4">
+        {/* Credits - hero stat */}
+        <Card className="p-6 bg-card border-border relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-foreground/20 to-transparent pointer-events-none" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-[13px] font-medium">
+              <Coins className="w-4 h-4" /> Credit balance
+            </div>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Peersy credits</span>
+          </div>
+          <div className="flex items-end gap-2">
+            <span className="text-4xl font-semibold tracking-tight leading-none tabular-nums">{user?.credits ?? 0}</span>
+            <span className="text-sm text-muted-foreground mb-0.5">credits</span>
+          </div>
+          <div className="mt-5 pt-4 border-t border-border flex items-center justify-between">
+            <div>
+              <p className="text-[11px] text-muted-foreground font-medium">Earned</p>
+              <p className="text-sm font-semibold tabular-nums">{earnedCount}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] text-muted-foreground font-medium">Spent</p>
+              <p className="text-sm font-semibold tabular-nums">{spentCount}</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Session stats - inline distribution */}
+        <Card className="p-6 bg-card border-border lg:col-span-2">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-[13px] font-medium text-muted-foreground">Sessions</h3>
+            <Link to="/dashboard/sessions" className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+              View all <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="flex h-2 rounded-full overflow-hidden bg-muted mb-5">
+            <div className="bg-primary/80 transition-all" style={{ width: `${sessions.length ? (scheduledCount / sessions.length) * 100 : 0}%` }} />
+            <div className="bg-amber-500/80 transition-all" style={{ width: `${sessions.length ? (pendingCount / sessions.length) * 100 : 0}%` }} />
+            <div className="bg-foreground/25 transition-all" style={{ width: `${sessions.length ? (completedCount / sessions.length) * 100 : 0}%` }} />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Scheduled', value: scheduledCount, color: 'bg-primary/80', icon: Clock },
+              { label: 'Pending', value: pendingCount, color: 'bg-amber-500/80', icon: MessageSquare },
+              { label: 'Completed', value: completedCount, color: 'bg-foreground/25', icon: Video },
+            ].map((s) => {
+              const Icon = s.icon;
+              return (
+                <div key={s.label}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className={`w-2 h-2 rounded-full ${s.color}`} />
+                    <span className="text-[11px] text-muted-foreground font-medium">{s.label}</span>
                   </div>
-                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary/5 text-muted-foreground">
-                    {stat.change}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <Icon className="w-3.5 h-3.5 text-muted-foreground/60" strokeWidth={2} />
+                    <span className="text-xl font-semibold tracking-tight tabular-nums">{s.value}</span>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-bold tracking-tight">{stat.value}</h3>
-                  <p className="text-sm text-muted-foreground font-medium">{stat.label}</p>
-                </div>
-              </Card>
-            </motion.div>
-          );
-        })}
+              );
+            })}
+          </div>
+        </Card>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Main Content Area */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Upcoming + Recent */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Active Session Banner */}
-          {upcomingSession ? (
-            <Card className="p-6 border-primary/20 bg-primary/5 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          {/* Upcoming */}
+          {upcoming ? (
+            <Card className="p-5 sm:p-6 border-border bg-card">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <div className="flex items-center gap-2 text-primary font-medium mb-1">
-                    <Clock className="w-4 h-4" /> Upcoming Session
+                  <div className="flex items-center gap-2 text-muted-foreground text-[13px] font-medium mb-1.5">
+                    <Clock className="w-4 h-4" /> Upcoming session
                   </div>
-                  <h3 className="text-xl font-bold">Python Basics with Sarah</h3>
-                  <p className="text-muted-foreground mt-1">Today, 3:00 PM • 60 mins</p>
+                  <h3 className="text-lg font-semibold tracking-tight">{upcoming.topic}</h3>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    with {isTeacher(upcoming) ? upcoming.learner?.name : upcoming.teacher?.name}
+                    {upcoming.scheduledAt && <> • {format(new Date(upcoming.scheduledAt), 'MMM d, h:mm a')}</>}
+                    {" "}• {upcoming.durationMinutes || 60} min
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge variant="outline" className="text-xs">{upcoming.mode === 'BARTER' ? 'Barter' : 'Credit-paid'}</Badge>
+                    {upcoming.mode === 'BARTER' && <Badge variant="outline" className="text-xs"><Scale className="w-3 h-3 mr-1" /> Skill exchange</Badge>}
+                  </div>
                 </div>
-                <Button className="w-full sm:w-auto">Join Meeting</Button>
+                <Button asChild>
+                  <Link to={`/dashboard/session/${upcoming.id}`}>Open session</Link>
+                </Button>
               </div>
             </Card>
           ) : (
-            <Card className="p-8 border-dashed border-border flex flex-col items-center justify-center text-center space-y-4 bg-muted/5">
-              <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-muted-foreground" />
+            <Card className="p-6 border-dashed border-border flex flex-col items-center justify-center text-center py-12">
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Calendar className="w-5 h-5 text-muted-foreground" />
               </div>
-              <div>
-                <h3 className="font-semibold text-lg">No upcoming sessions</h3>
-                <p className="text-muted-foreground text-sm max-w-sm mx-auto mt-1">
-                  You don't have any sessions scheduled. Find a match to start learning!
-                </p>
-              </div>
-              <Button variant="outline" asChild>
-                <Link to="/dashboard/matching">Browse Mentors</Link>
+              <h3 className="font-semibold text-[15px]">No upcoming sessions</h3>
+              <p className="text-muted-foreground text-sm max-w-sm mt-1">
+                {pending > 0 ? `${pending} request${pending > 1 ? 's' : ''} waiting on a response.` : "Request a session to start chatting, scheduling, and learning."}
+              </p>
+              <Button variant="outline" asChild className="mt-4">
+                <Link to="/dashboard/matching">Find a match</Link>
               </Button>
             </Card>
           )}
 
-          {/* Quick Actions Grid */}
+          {/* Recent sessions */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              Learning Path <ArrowRight className="w-4 h-4 text-muted-foreground" />
-            </h3>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Card className="p-5 hover:bg-muted/5 transition-colors cursor-pointer group border-border/50">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
-                    <code className="text-sm font-bold">JS</code>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold group-hover:text-primary transition-colors">JavaScript Fundamentals</h4>
-                    <div className="w-full bg-secondary/20 h-1.5 rounded-full mt-2 w-24">
-                      <div className="bg-blue-500 h-full rounded-full w-[60%]" />
-                    </div>
-                  </div>
-                </div>
-              </Card>
-              
-              <Card className="p-5 hover:bg-muted/5 transition-colors cursor-pointer group border-border/50">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
-                    <code className="text-sm font-bold">Py</code>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold group-hover:text-primary transition-colors">Python Data Science</h4>
-                    <div className="w-full bg-secondary/20 h-1.5 rounded-full mt-2 w-24">
-                      <div className="bg-emerald-500 h-full rounded-full w-[30%]" />
-                    </div>
-                  </div>
-                </div>
-              </Card>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[15px] font-semibold tracking-tight">Recent sessions</h3>
+              <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
+                <Link to="/dashboard/sessions">View all <ArrowRight className="w-3.5 h-3.5 ml-1" /></Link>
+              </Button>
             </div>
+            {recentSessions.length === 0 ? (
+              <Card className="p-5 border-border text-muted-foreground text-sm text-center">
+                No sessions yet. Request your first session to get started.
+              </Card>
+            ) : (
+              <div className="rounded-lg border border-border divide-y divide-border">
+                {recentSessions.map((s) => {
+                  const other = isTeacher(s) ? s.learner?.name : s.teacher?.name;
+                  return (
+                    <Link key={s.id} to={`/dashboard/session/${s.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{s.topic}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          with {other}
+                          {s.scheduledAt ? ` • ${format(new Date(s.scheduledAt), 'MMM d, h:mm a')}` : ''}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className={`shrink-0 text-xs ${
+                        s.status === 'COMPLETED' ? 'border-accent/30 text-accent' :
+                        s.status === 'SCHEDULED' ? 'border-foreground/20 text-foreground' :
+                        s.status === 'PENDING' ? 'border-amber-500/40 text-amber-500' :
+                        'border-muted-foreground/30 text-muted-foreground'
+                      }`}>
+                        {s.status.toLowerCase()}
+                      </Badge>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Sidebar Activity */}
+        {/* Sidebar */}
         <div className="space-y-6">
-          <Card className="p-5 border-border/50 h-full">
-            <h3 className="font-semibold mb-4">Recent Activity</h3>
-            <div className="space-y-6 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-border">
-              {/* Activity Item 1 */}
-              <div className="relative pl-6">
-                <div className="absolute left-0 top-1 w-4 h-4 rounded-full bg-background border-2 border-primary z-10" />
-                <p className="text-sm font-medium">Completed session</p>
-                <p className="text-xs text-muted-foreground">React Hooks Masterclass</p>
-                <p className="text-xs text-muted-foreground mt-1">2 hours ago</p>
+          <Card className="p-5 border-border bg-card">
+            <h3 className="text-[15px] font-semibold tracking-tight mb-4">Your profile</h3>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-11 h-11 rounded-full bg-accent/15 flex items-center justify-center text-base font-semibold text-accent">
+                {user?.name?.charAt(0) || 'U'}
               </div>
-              
-              {/* Activity Item 2 */}
-              <div className="relative pl-6">
-                <div className="absolute left-0 top-1 w-4 h-4 rounded-full bg-background border-2 border-muted-foreground/30 z-10" />
-                <p className="text-sm font-medium">New match request</p>
-                <p className="text-xs text-muted-foreground">Alex wants to learn Figma</p>
-                <p className="text-xs text-muted-foreground mt-1">5 hours ago</p>
-              </div>
-
-              {/* Activity Item 3 */}
-              <div className="relative pl-6">
-                <div className="absolute left-0 top-1 w-4 h-4 rounded-full bg-background border-2 border-emerald-500/50 z-10" />
-                <p className="text-sm font-medium">Earned 50 Credits</p>
-                <p className="text-xs text-muted-foreground">Teaching Web Design</p>
-                <p className="text-xs text-muted-foreground mt-1">Yesterday</p>
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{user?.name}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Credits</dt>
+                <dd className="font-medium">{user?.credits ?? 0}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Skills listed</dt>
+                <dd className="font-medium">{(user?.skills ?? []).length}</dd>
+              </div>
+            </dl>
+          </Card>
+
+          <Card className="p-5 border-border bg-card">
+            <h3 className="text-[15px] font-semibold tracking-tight mb-3">How barter works</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Sessions can be <span className="text-foreground">barter</span> — each person teaches a skill in exchange — or{" "}
+              <span className="text-foreground">credit-paid</span>. Credits are escrowed at request and billed by the actual time you meet.
+            </p>
           </Card>
         </div>
       </div>
     </div>
   );
 }
-

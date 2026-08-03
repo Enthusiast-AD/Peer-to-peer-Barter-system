@@ -1,23 +1,34 @@
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Video, Calendar, Clock, User, ChevronRight, CheckCircle2, XCircle, AlertCircle, Sparkles, Globe2 } from 'lucide-react';
+import { Video, Calendar, Clock, User, ChevronRight, CheckCircle2, AlertCircle, MessageSquare, Scale, Coins } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
 
+interface Session {
+  id: string;
+  status: string;
+  mode: 'BARTER' | 'CREDITS';
+  topic: string;
+  scheduledAt?: string | null;
+  durationMinutes?: number;
+  actualDurationMinutes?: number | null;
+  creditsReserved?: number;
+  teacher?: { id: string; name: string; avatar?: string };
+  learner?: { id: string; name: string; avatar?: string };
+  skill?: { name: string };
+  review?: any;
+}
+
 export default function Sessions() {
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [scheduleInputs, setScheduleInputs] = useState<Record<string, string>>({});
-  const [rescheduleOpen, setRescheduleOpen] = useState<Record<string, boolean>>({});
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [unread, setUnread] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
   useEffect(() => {
     fetchSessions();
@@ -25,293 +36,147 @@ export default function Sessions() {
 
   const fetchSessions = async () => {
     try {
-      const response = await api.get('/sessions');
-      if (response.data.success) {
-        const nextSessions = response.data.data;
-        setSessions(nextSessions);
-        setScheduleInputs((prev) => {
-          const nextInputs = { ...prev };
-          nextSessions.forEach((session: any) => {
-            if (!nextInputs[session.id] && session.scheduledAt) {
-              nextInputs[session.id] = format(new Date(session.scheduledAt), "yyyy-MM-dd'T'HH:mm");
-            }
-          });
-          return nextInputs;
-        });
-      }
+      const [sessionsRes, unreadRes] = await Promise.all([
+        api.get('/sessions'),
+        api.get('/sessions/unread-counts')
+      ]);
+      if (sessionsRes.data.success) setSessions(sessionsRes.data.data);
+      if (unreadRes.data.success) setUnread(unreadRes.data.data);
     } catch (error) {
-      toast.error('Failed to load sessions');
+      console.error('Failed to load sessions', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateSessionStatus = async (
-    sessionId: string,
-    status: string,
-    scheduledAt?: string,
-    successMessage?: string
-  ) => {
-    try {
-      const response = await api.put(`/sessions/${sessionId}`, { status, scheduledAt });
-      if (response.data.success) {
-        toast.success(successMessage || `Session ${status.toLowerCase()}`);
-        fetchSessions();
-      }
-    } catch (error) {
-      toast.error('Failed to update session');
-    }
+  const canJoinNow = (s: Session) => {
+    if (s.status !== 'SCHEDULED' || !s.scheduledAt) return false;
+    const start = new Date(s.scheduledAt).getTime() - 10 * 60 * 1000;
+    const end = new Date(s.scheduledAt).getTime() + (s.durationMinutes || 60) * 60 * 1000;
+    const now = Date.now();
+    return now >= start && now <= end;
   };
 
-  const formatDateTimeInTz = (dateValue: string) => {
-    return new Intl.DateTimeFormat(undefined, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-      timeZone: userTimeZone
-    }).format(new Date(dateValue));
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'SCHEDULED': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-      case 'PENDING': return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
-      case 'COMPLETED': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-      case 'CANCELLED': return 'bg-rose-500/10 text-rose-500 border-rose-500/20';
-      default: return 'bg-neutral-500/10 text-neutral-500 border-neutral-500/20';
-    }
+  const statusStyles: Record<string, string> = {
+    SCHEDULED: 'bg-accent/10 text-accent border-accent/20',
+    PENDING: 'bg-amber-500/10 text-amber-500 border-amber-500/25',
+    COMPLETED: 'bg-foreground/5 text-foreground border-foreground/15',
+    CANCELLED: 'bg-muted text-muted-foreground border-border',
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-6 h-6 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-12 px-4 md:px-0 mt-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-        >
-          <div className="inline-block px-3 py-1 mb-4 rounded-full bg-secondary/50 border border-border/50 text-sm text-muted-foreground">
-            <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> Manage Connections</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-2">Your Sessions</h1>
-          <p className="text-muted-foreground text-lg">Connect, teach, and learn with your matches.</p>
-        </motion.div>
+    <div className="space-y-8 pb-12">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Sessions</h1>
+        <p className="text-muted-foreground mt-1.5 text-[15px]">Chat, agree on a time, and manage your meetings.</p>
       </div>
 
-      <div className="grid gap-6">
-        <AnimatePresence mode="popLayout">
-          {sessions.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="col-span-1"
-            >
-              <Card className="flex flex-col items-center justify-center p-12 text-center border-border/50 backdrop-blur-sm rounded-3xl bg-card/50">
-                <div className="w-20 h-20 rounded-full bg-secondary/30 flex items-center justify-center mb-6 border border-border/50 shadow-sm">
-                  <Calendar className="w-10 h-10 text-muted-foreground" />
-                </div>
-                <h3 className="text-2xl font-semibold text-foreground mb-3">No active sessions</h3>
-                <p className="text-muted-foreground mb-8 max-w-sm text-lg">
-                  You don't have any upcoming or pending sessions. Explore matches to start learning!
-                </p>
-                <Button onClick={() => navigate('/dashboard/matching')} className="rounded-full px-8 py-6 text-lg font-medium">
-                  Find Matches <ChevronRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Card>
-            </motion.div>
-          ) : (
-            sessions.map((session: any, index: number) => {
-              const isRequester = session.learnerId === user?.id;
-              const otherPerson = isRequester ? session.teacher : session.learner;
-              const isPending = session.status === 'PENDING';
-              const canJoin = session.status === 'SCHEDULED';
-              
-              return (
-                <motion.div
-                  key={session.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Card className="group relative overflow-hidden bg-neutral-950/40 border border-white/5 backdrop-blur-3xl hover:border-white/10 transition-all duration-500 rounded-3xl w-full">
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                    
-                    <div className="relative p-6 sm:p-8 flex flex-col lg:flex-row gap-8 lg:items-center justify-between">
-                      <div className="flex-1 space-y-6">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline" className={`${getStatusColor(session.status)} px-3 py-1 rounded-full uppercase tracking-wider text-xs font-bold`}>
-                            {session.status}
-                          </Badge>
-                          <span className="text-sm font-medium text-neutral-400 flex items-center gap-2 bg-white/5 px-3 py-1 rounded-full">
-                            {isRequester ? '📚 Learning' : '🎓 Teaching'} • <span className="text-white">{session.Skill?.name || 'Skill Room'}</span>
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-5">
-                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-neutral-800 to-neutral-700 flex items-center justify-center border-2 border-neutral-700/50 shadow-xl overflow-hidden">
-                            {otherPerson?.avatar ? (
-                              <img src={otherPerson.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                            ) : (
-                              <User className="w-8 h-8 text-neutral-400" />
-                            )}
-                          </div>
-                          <div>
-                            <h3 className="text-2xl font-bold text-white mb-2">
-                              {otherPerson?.name || 'Unknown User'}
-                            </h3>
-                            <div className="flex items-center gap-4 text-sm text-neutral-400">
-                              <span className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-md">
-                                <Calendar className="w-4 h-4 text-emerald-400" />
-                                {session.scheduledAt ? format(new Date(session.scheduledAt), 'MMM dd, yyyy') : 'No Date'}
-                              </span>
-                              <span className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-md">
-                                <Clock className="w-4 h-4 text-blue-400" />
-                                {session.scheduledAt ? format(new Date(session.scheduledAt), 'h:mm a') : 'No Time'}
-                              </span>
-                              {session.scheduledAt ? (
-                                <span className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-md">
-                                  <Globe2 className="w-4 h-4 text-violet-400" />
-                                  {userTimeZone}
-                                </span>
-                              ) : null}
-                            </div>
-                            {session.scheduledAt ? (
-                              <p className="text-xs text-neutral-500 mt-2">
-                                Local time: {formatDateTimeInTz(session.scheduledAt)}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
+      <div className="space-y-3">
+        {sessions.length === 0 ? (
+          <Card className="flex flex-col items-center justify-center p-12 text-center border-dashed border-border">
+            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Calendar className="w-6 h-6 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold tracking-tight">No sessions yet</h3>
+            <p className="text-muted-foreground text-sm mt-1 mb-5">Request a session from a match to get started.</p>
+            <Button onClick={() => navigate('/dashboard/matching')}>Find Matches <ChevronRight className="w-4 h-4 ml-1" /></Button>
+          </Card>
+        ) : (
+          sessions.map((session) => {
+            const isRequester = session.learnerId === user?.id;
+            const otherPerson = isRequester ? session.teacher : session.learner;
+            const joinable = canJoinNow(session);
 
-                      <div className="flex flex-col items-stretch lg:items-end gap-3 pt-6 border-t border-white/5 lg:border-t-0 lg:pt-0 min-w-[200px] z-10">
-                        {isPending && !isRequester ? (
-                          <div className="flex flex-col gap-3 w-full">
-                            <input
-                              type="datetime-local"
-                              value={scheduleInputs[session.id] || ''}
-                              onChange={(e) => setScheduleInputs((prev) => ({ ...prev, [session.id]: e.target.value }))}
-                              className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-sm text-white"
-                            />
-                            <p className="text-xs text-neutral-500">Scheduling in your timezone: {userTimeZone}</p>
-                            <Button 
-                              variant="outline" 
-                              className="w-full bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-300 transition-all rounded-xl py-6 text-base font-medium"
-                              onClick={() => {
-                                const selectedDate = scheduleInputs[session.id];
-                                if (!selectedDate) {
-                                  toast.error('Please select date and time before accepting');
-                                  return;
-                                }
-                                updateSessionStatus(
-                                  session.id,
-                                  'SCHEDULED',
-                                  new Date(selectedDate).toISOString(),
-                                  'Session accepted and scheduled'
-                                );
-                              }}
-                            >
-                              <CheckCircle2 className="w-5 h-5 mr-2" /> Accept Request
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              className="w-full text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors rounded-xl py-6"
-                              onClick={() => updateSessionStatus(session.id, 'CANCELLED')}
-                            >
-                              <XCircle className="w-5 h-5 mr-2" /> Decline
-                            </Button>
-                          </div>
-                        ) : null}
-
-                        {isPending && isRequester ? (
-                           <div className="w-full p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 flex items-center justify-center gap-3 text-sm text-amber-500/80 font-medium">
-                             <AlertCircle className="w-5 h-5" /> Awaiting tutor's response
-                           </div>
-                        ) : null}
-
-                        {canJoin && (
-                          <div className="w-full space-y-3">
-                            <Button 
-                              className="w-full relative group/btn overflow-hidden rounded-xl px-8 py-8 bg-white text-black hover:bg-neutral-200 transition-all shadow-[0_0_40px_-5px_rgba(255,255,255,0.4)] hover:shadow-[0_0_60px_-5px_rgba(255,255,255,0.6)] border-none"
-                              onClick={() => navigate(`/dashboard/session/${session.id}/room`)}
-                            >
-                              <span className="relative z-10 flex flex-col items-center gap-1">
-                                <span className="flex items-center gap-2 text-lg font-bold">
-                                  <Video className="w-6 h-6" /> Join Session
-                                </span>
-                                <span className="text-xs font-semibold uppercase tracking-wider text-black/60">Room is ready</span>
-                              </span>
-                            </Button>
-
-                            <Button
-                              variant="outline"
-                              className="w-full border-white/10 hover:bg-white/5"
-                              onClick={() => setRescheduleOpen((prev) => ({ ...prev, [session.id]: !prev[session.id] }))}
-                            >
-                              {rescheduleOpen[session.id] ? 'Cancel Reschedule' : 'Reschedule Session'}
-                            </Button>
-
-                            {rescheduleOpen[session.id] ? (
-                              <div className="w-full p-3 rounded-xl border border-white/10 bg-black/20 space-y-3">
-                                <input
-                                  type="datetime-local"
-                                  value={scheduleInputs[session.id] || ''}
-                                  onChange={(e) => setScheduleInputs((prev) => ({ ...prev, [session.id]: e.target.value }))}
-                                  className="w-full bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-sm text-white"
-                                />
-                                <p className="text-xs text-neutral-500">Rescheduling in your timezone: {userTimeZone}</p>
-                                <Button
-                                  className="w-full"
-                                  onClick={() => {
-                                    const selectedDate = scheduleInputs[session.id];
-                                    if (!selectedDate) {
-                                      toast.error('Please select a new date and time');
-                                      return;
-                                    }
-                                    updateSessionStatus(
-                                      session.id,
-                                      'SCHEDULED',
-                                      new Date(selectedDate).toISOString(),
-                                      'Session rescheduled successfully'
-                                    );
-                                    setRescheduleOpen((prev) => ({ ...prev, [session.id]: false }));
-                                  }}
-                                >
-                                  Save New Schedule
-                                </Button>
-                              </div>
-                            ) : null}
-                          </div>
-                        )}
-
-                        {!isPending && !canJoin && (
-                          <div className="w-full">
-                            {session.status === 'COMPLETED' ? (
-                               <div className="w-full p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 flex items-center justify-center gap-3 text-sm text-blue-400 font-medium">
-                                 <CheckCircle2 className="w-5 h-5" /> Session Completed
-                               </div>
-                            ) : session.status === 'CANCELLED' ? (
-                               <div className="w-full p-4 rounded-xl bg-rose-500/5 border border-rose-500/10 flex items-center justify-center gap-3 text-sm text-rose-400 font-medium">
-                                 <XCircle className="w-5 h-5" /> Session Cancelled
-                               </div>
-                            ) : null}
-                          </div>
-                        )}
-                      </div>
+            return (
+              <Card key={session.id} className="p-5 sm:p-6 border-border bg-card">
+                <div className="flex flex-col lg:flex-row gap-5 lg:items-center justify-between">
+                  <div className="flex gap-4 min-w-0">
+                    <div className="w-11 h-11 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border overflow-hidden">
+                      {otherPerson?.avatar ? (
+                        <img src={otherPerson.avatar} alt={otherPerson.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-5 h-5 text-muted-foreground" strokeWidth={1.8} />
+                      )}
                     </div>
-                  </Card>
-                </motion.div>
-              );
-            })
-          )}
-        </AnimatePresence>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <Badge variant="outline" className={`text-xs ${statusStyles[session.status] || 'border-border text-muted-foreground'}`}>
+                          {session.status.toLowerCase()}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs border-border text-muted-foreground">
+                          {session.mode === 'BARTER' ? <><Scale className="w-3 h-3 mr-1" /> Barter</> : <><Coins className="w-3 h-3 mr-1" /> Credit-paid</>}
+                        </Badge>
+                      </div>
+                      <h3 className="font-semibold tracking-tight truncate">{session.topic}</h3>
+                      <p className="text-sm text-muted-foreground truncate mt-0.5">
+                        with {otherPerson?.name || 'Unknown'}
+                      </p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2 flex-wrap">
+                        {session.scheduledAt ? (
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5" /> {format(new Date(session.scheduledAt), 'MMM d, yyyy h:mm a')}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 text-amber-500/90">
+                            <Clock className="w-3.5 h-3.5" /> Time not agreed yet
+                          </span>
+                        )}
+                        {session.durationMinutes ? (
+                          <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {session.durationMinutes} min</span>
+                        ) : null}
+                      </div>
+                      {session.status === 'COMPLETED' && session.actualDurationMinutes != null && (
+                        <p className="text-xs text-muted-foreground mt-1.5">
+                          Ran {session.actualDurationMinutes} min
+                          {session.mode === 'CREDITS' ? ` • billed ${Math.min(session.actualDurationMinutes, session.creditsReserved ?? session.actualDurationMinutes)} credits` : ' • barter'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 lg:items-end shrink-0">
+                    <Button variant="outline" className="w-full lg:w-auto" onClick={() => navigate(`/dashboard/session/${session.id}`)}>
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      {session.status === 'PENDING' ? (isRequester ? 'Chat & schedule' : 'Review request') : 'Open session'}
+                      {unread[session.id] ? (
+                        <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-accent-foreground text-[11px] font-semibold">
+                          {unread[session.id]}
+                        </span>
+                      ) : null}
+                    </Button>
+                    {joinable && (
+                      <Button className="w-full lg:w-auto" onClick={() => window.open(`/meet/${session.id}`, '_blank', 'noopener,noreferrer')}>
+                        <Video className="w-4 h-4 mr-2" /> Join meeting
+                      </Button>
+                    )}
+                    {session.status === 'SCHEDULED' && !joinable && session.scheduledAt && (
+                      <p className="text-xs text-muted-foreground text-center lg:text-right">Join opens 10 min before start</p>
+                    )}
+                    {session.status === 'COMPLETED' && !session.myReview && (
+                      <Button variant="outline" className="w-full lg:w-auto text-accent border-accent/30 hover:bg-accent/10" onClick={() => navigate(`/dashboard/session/${session.id}/review`)}>
+                        <CheckCircle2 className="w-4 h-4 mr-2" /> Leave review
+                      </Button>
+                    )}
+                    {session.status === 'COMPLETED' && session.myReview && (
+                      <p className="text-xs text-accent flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> Reviewed · {session.myReview.rating}/5</p>
+                    )}
+                    {session.status === 'PENDING' && isRequester && (
+                      <p className="text-xs text-amber-500/90 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" /> Awaiting teacher's response</p>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })
+        )}
       </div>
     </div>
   );
