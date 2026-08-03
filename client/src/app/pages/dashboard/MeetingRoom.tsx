@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { JitsiMeeting } from '@jitsi/react-sdk';
 import { useAuth } from '../../context/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { Card } from '../../components/ui/card';
+import { LoadingScreen } from '../../components/LoadingScreen';
+import { ExternalLink, Clock, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../../services/api';
 
@@ -12,145 +14,80 @@ export default function MeetingRoom() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
-  const [jwtToken, setJwtToken] = useState<string>('');
-  const [roomName, setRoomName] = useState<string>('');
-  const apiRef = useRef<any>(null);
-  const startTimeRef = useRef<number | null>(null);
-  
-  // 60 minutes in milliseconds
-  const SESSION_DURATION = 60 * 60 * 1000; 
+  const [opened, setOpened] = useState(false);
 
   useEffect(() => {
-    const fetchSessionAndToken = async () => {
+    const fetchSession = async () => {
       try {
-        const response = await api.get(`/sessions`); // In real app, fetch single session: /sessions/${sessionId}
-        const foundSession = response.data.data.find((s: any) => s.id === sessionId);
-        
-        if (foundSession) {
-           setSession(foundSession);
-           
-           // Set default room name
-           let finalRoomName = `SkillSwap-${sessionId}`;
-           
-           // Try to get JaaS token if configured
-           try {
-             const tokenRes = await api.get(`/sessions/${sessionId}/token`);
-             if (tokenRes.data.data.token) {
-                setJwtToken(tokenRes.data.data.token);
-                // Backend might return the required room name (though usually it's consistent)
-                if (tokenRes.data.data.roomName) {
-                    finalRoomName = tokenRes.data.data.roomName;
-                }
-             }
-           } catch (e) {
-             console.log("Using public server (no token)");
-           }
-           
-           setRoomName(finalRoomName);
-           
-        } else {
-           toast.error("Session not found");
-           navigate('/dashboard/sessions');
-        }
-      } catch (error) {
-        toast.error("Failed to load session");
+        const res = await api.get(`/sessions/${sessionId}`);
+        if (res.data.success) setSession(res.data.data);
+        else { toast.error('Session not found'); navigate('/dashboard/sessions'); }
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to load session');
         navigate('/dashboard/sessions');
       } finally {
         setLoading(false);
       }
     };
-    fetchSessionAndToken();
-  }, [sessionId, navigate]);
+    fetchSession();
+    // eslint-disable-next-line
+  }, [sessionId]);
 
-  const handleApiReady = (externalApi: any) => {
-    apiRef.current = externalApi;
-    
-    externalApi.on('videoConferenceJoined', () => {
-        startTimeRef.current = Date.now();
-        console.log("Meeting joined, timer started");
-        
-        // Start 60 minute timer
-        setTimeout(() => {
-            toast.info("Session time is up! Redirecting to review...");
-            handleMeetingEnd();
-        }, SESSION_DURATION);
-
-        // Provide warning at 55 minutes
-        setTimeout(() => {
-            toast.warning("5 minutes remaining in session.");
-        }, SESSION_DURATION - (5 * 60 * 1000));
-    });
-
-    // Listen for hangup
-    externalApi.on('videoConferenceLeft', () => {
-        handleMeetingEnd();
-    });
+  const openMeeting = () => {
+    setOpened(true);
+    // Open the standalone meeting in a new tab.
+    window.open(`/meet/${sessionId}`, '_blank', 'noopener,noreferrer');
   };
 
-  const handleMeetingEnd = async () => {
-      let durationMinutes = 0;
-      if (startTimeRef.current) {
-          const durationMs = Date.now() - startTimeRef.current;
-          durationMinutes = Math.ceil(durationMs / (1000 * 60));
-      }
-      
-      if (apiRef.current) {
-          apiRef.current.dispose();
-      }
-      
-      // Navigate to review page with actual duration
-      navigate(`/dashboard/session/${sessionId}/review?duration=${durationMinutes}`);
-  };
+  if (loading || !user) return <LoadingScreen label="Checking session" />;
 
-  if (loading || !user) {
-    return (
-      <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-primary" />
-      </div>
-    );
-  }
+  const scheduledAt = session?.scheduledAt ? new Date(session.scheduledAt) : null;
+  const joinWindow = scheduledAt ? {
+    start: new Date(scheduledAt.getTime() - 10 * 60 * 1000),
+    end: new Date(scheduledAt.getTime() + (session?.durationMinutes || 60) * 60 * 1000)
+  } : null;
+  const now = new Date();
+  const canJoin = joinWindow && now >= joinWindow.start && now <= joinWindow.end;
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
-       <div className="p-4 bg-neutral-900 border-b border-neutral-800 flex justify-between items-center">
-            <div>
-                 <h2 className="text-lg font-bold">Session: {session?.topic}</h2>
-                 <p className="text-sm text-neutral-400">Time Limit: 60 Minutes</p>
-            </div>
-            <button 
-                onClick={handleMeetingEnd}
-                className="px-4 py-2 bg-red-500/10 text-red-500 rounded hover:bg-red-500/20 transition-colors"
-            >
-                End Session
-            </button>
-       </div>
-       <div className="flex-1 overflow-hidden relative">
-        <JitsiMeeting
-            domain={jwtToken ? "8x8.vc" : "meet.jit.si"} 
-            roomName={roomName}
-            jwt={jwtToken || undefined}
-            configOverwrite={{
-                startWithAudioMuted: true,
-                disableThirdPartyRequests: true,
-                prejoinPageEnabled: false,
-            }}
-            interfaceConfigOverwrite={{
-                TOOLBAR_BUTTONS: [
-                    'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
-                    'fodeviceselection', 'hangup', 'profile', 'chat', 'recording',
-                    'livestreaming', 'etherpad', 'sharedvideo', 'settings', 'raisehand',
-                    'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts',
-                    'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone',
-                    'security'
-                ],
-            }}
-            userInfo={{
-                displayName: user.name || 'User'
-            }}
-            onApiReady={handleApiReady}
-            getIFrameRef={(iframeRef) => { iframeRef.style.height = '100%'; }}
-        />
-       </div>
+    <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <Card className="w-full max-w-md p-8 border-border bg-card text-center">
+        <div className="w-12 h-12 mx-auto rounded-full bg-accent/10 flex items-center justify-center mb-5">
+          <Video className="w-5 h-5 text-accent" />
+        </div>
+        <h1 className="text-lg font-semibold tracking-tight mb-1">{session?.topic || 'Session'}</h1>
+        {scheduledAt && (
+          <p className="text-sm text-muted-foreground mb-1">
+            {scheduledAt.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground mb-6 flex items-center justify-center gap-1">
+          <Clock className="w-3.5 h-3.5" /> {session?.durationMinutes || 60} minutes
+        </p>
+
+        {opened ? (
+          <p className="text-sm text-accent mb-4">
+            The meeting opened in a new tab. Return here after it ends to leave a review.
+          </p>
+        ) : canJoin ? (
+          <>
+            <Button onClick={openMeeting} className="w-full mb-2">
+              <ExternalLink className="w-4 h-4 mr-2" /> Open meeting in new tab
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              The meeting opens full-screen in a separate tab.
+            </p>
+          </>
+        ) : joinWindow && now < joinWindow.start ? (
+          <p className="text-sm text-amber-500">
+            Join opens {joinWindow.start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+          </p>
+        ) : joinWindow && now > joinWindow.end ? (
+          <p className="text-sm text-amber-500">This session window has passed.</p>
+        ) : (
+          <p className="text-sm text-muted-foreground">This session is not open for joining.</p>
+        )}
+      </Card>
     </div>
   );
 }
