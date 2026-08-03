@@ -52,48 +52,48 @@ export default function UserPublicProfile() {
     );
   }
 
-  const teachSkills = (profile.Skills || []).filter((s: any) => s.type === 'TEACH');
-  const learnSkills = (profile.Skills || []).filter((s: any) => s.type === 'LEARN');
+  const teachSkills = (profile.skills || profile.Skills || []).filter((s: any) => s.type === 'TEACH');
+  const learnSkills = (profile.skills || profile.Skills || []).filter((s: any) => s.type === 'LEARN');
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <Button variant="outline" onClick={() => navigate(-1)} className="gap-2">
-        <ArrowLeft className="w-4 h-4" /> Back to Matches
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-2 text-muted-foreground">
+        <ArrowLeft className="w-4 h-4" /> Back
       </Button>
 
-      <Card className="p-6 bg-neutral-900/40 border-neutral-800">
+      <Card className="p-6 border-border bg-card">
         <div className="flex items-start gap-4">
           {profile.avatar ? (
-            <img src={profile.avatar} alt={profile.name} className="w-16 h-16 rounded-full object-cover" />
+            <img src={profile.avatar} alt={profile.name} className="w-14 h-14 rounded-full object-cover border border-border" />
           ) : (
-            <div className="w-16 h-16 rounded-full bg-neutral-800 flex items-center justify-center">
-              <UserCircle className="w-9 h-9 text-neutral-400" />
+            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center border border-border">
+              <UserCircle className="w-7 h-7 text-muted-foreground" />
             </div>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-white">{profile.name}</h1>
-            <p className="text-neutral-400 mt-1">{profile.bio || 'No bio added yet.'}</p>
-            <p className="text-sm text-neutral-500 mt-2">Credits: {profile.credits}</p>
+            <h1 className="text-xl font-semibold tracking-tight">{profile.name}</h1>
+            <p className="text-muted-foreground text-sm mt-1">{profile.bio || 'No bio added yet.'}</p>
+            <p className="text-xs text-muted-foreground mt-2">Credits: {profile.credits}</p>
           </div>
         </div>
       </Card>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <Card className="p-6 bg-neutral-900/40 border-neutral-800">
-          <h2 className="font-semibold mb-4 flex items-center gap-2"><Lightbulb className="w-4 h-4" /> Skills They Teach</h2>
+        <Card className="p-6 border-border bg-card">
+          <h2 className="font-semibold mb-4 flex items-center gap-2"><Lightbulb className="w-4 h-4 text-accent" /> Skills they teach</h2>
           <div className="flex flex-wrap gap-2">
             {teachSkills.length > 0 ? teachSkills.map((skill: any) => (
-              <Badge key={skill.id} variant="secondary">{skill.name}</Badge>
-            )) : <p className="text-sm text-neutral-500">No teaching skills listed.</p>}
+              <Badge key={skill.id} variant="outline" className="text-xs border-accent/25 text-accent py-1.5 px-3">{skill.name}</Badge>
+            )) : <p className="text-sm text-muted-foreground">No teaching skills listed.</p>}
           </div>
         </Card>
 
-        <Card className="p-6 bg-neutral-900/40 border-neutral-800">
-          <h2 className="font-semibold mb-4 flex items-center gap-2"><BookOpen className="w-4 h-4" /> Skills They Want To Learn</h2>
+        <Card className="p-6 border-border bg-card">
+          <h2 className="font-semibold mb-4 flex items-center gap-2"><BookOpen className="w-4 h-4 text-muted-foreground" /> Skills they want to learn</h2>
           <div className="flex flex-wrap gap-2">
             {learnSkills.length > 0 ? learnSkills.map((skill: any) => (
-              <Badge key={skill.id} variant="secondary">{skill.name}</Badge>
-            )) : <p className="text-sm text-neutral-500">No learning goals listed.</p>}
+              <Badge key={skill.id} variant="outline" className="text-xs py-1.5 px-3">{skill.name}</Badge>
+            )) : <p className="text-sm text-muted-foreground">No learning goals listed.</p>}
           </div>
         </Card>
       </div>

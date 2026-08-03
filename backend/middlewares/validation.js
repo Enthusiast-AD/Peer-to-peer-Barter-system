@@ -1,4 +1,4 @@
-import { body, validationResult } from 'express-validator';
+import { body, param, validationResult } from 'express-validator';
 
 const PASSWORD_MIN = 8;
 
@@ -15,6 +15,14 @@ const validate = (req, res, next) => {
   }
   next();
 };
+
+// Validates that URL path params are real UUIDs to avoid Prisma 500s.
+const uuidParam = (name) => param(name).isUUID().withMessage('Invalid id format');
+
+export const userIdParamValidation = [uuidParam('userId'), validate];
+export const sessionIdParamValidation = [uuidParam('sessionId'), validate];
+export const sessionIdPathValidation = [uuidParam('id'), validate];
+export const proposalIdParamValidation = [uuidParam('proposalId'), validate];
 
 export const registerValidation = [
   body('name')
@@ -75,11 +83,14 @@ export const createSessionValidation = [
     .notEmpty().withMessage('Topic is required')
     .isLength({ max: 200 }).withMessage('Topic must be at most 200 characters'),
   body('scheduledAt')
-    .notEmpty().withMessage('scheduledAt is required')
+    .optional({ nullable: true })
     .isISO8601().withMessage('scheduledAt must be a valid date'),
   body('durationMinutes')
     .optional()
     .isInt({ min: 15, max: 480 }).withMessage('Duration must be between 15 and 480 minutes'),
+  body('mode')
+    .optional()
+    .isIn(['BARTER', 'CREDITS']).withMessage('Mode must be BARTER or CREDITS'),
   validate
 ];
 
