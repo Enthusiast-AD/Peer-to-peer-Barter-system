@@ -1,14 +1,14 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/index.js';
+import { prisma } from '../db/index.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const JWT_OPTIONS = {
   expiresIn: '24h',
-  issuer: 'skillswap-api',
-  audience: 'skillswap-client'
+  issuer: 'peersy-api',
+  audience: 'peersy-client'
 };
 
 const signToken = (user) => jwt.sign(
@@ -20,13 +20,15 @@ const signToken = (user) => jwt.sign(
 const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
-  const existedUser = await User.findOne({ where: { email } });
+  const existedUser = await prisma.user.findUnique({ where: { email } });
   if (existedUser) {
     throw new ApiError(409, "User with email already exists");
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await User.create({ name, email, password: hashedPassword, credits: 60 });
+  const user = await prisma.user.create({
+    data: { name, email, password: hashedPassword, credits: 60 }
+  });
 
   const token = signToken(user);
 
@@ -37,7 +39,7 @@ const register = asyncHandler(async (req, res) => {
 
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ where: { email } });
+  const user = await prisma.user.findUnique({ where: { email } });
 
   // Generic error to avoid user enumeration (don't reveal whether email exists)
   const INVALID_CREDENTIALS = new ApiError(401, "Invalid email or password");
@@ -46,7 +48,11 @@ const login = asyncHandler(async (req, res) => {
       throw INVALID_CREDENTIALS;
   }
 
-  if (!user.password && user.googleId) {
+  if (user.banned) {
+      throw new ApiError(403, "Your account has been suspended for repeated no-shows. Please contact support.");
+  }
+
+  if (!user.password) {
       throw new ApiError(400, "This account uses Google Sign-In. Please log in with Google.");
   }
 
@@ -65,7 +71,10 @@ const login = asyncHandler(async (req, res) => {
               name: user.name,
               email: user.email,
               credits: user.credits,
-              avatar: user.avatar
+              avatar: user.avatar,
+              warnings: user.warnings,
+              banned: user.banned,
+              isAdmin: user.isAdmin
           }
       }, "Login successful")
   );

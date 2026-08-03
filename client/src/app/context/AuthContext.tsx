@@ -9,7 +9,8 @@ interface User {
   credits: number;
   avatar?: string;
   bio?: string;
-  Skills?: any[];
+  skills?: any[];
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {
