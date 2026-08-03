@@ -8,6 +8,7 @@ import {
 import { Toaster } from "sonner";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { LoadingScreen } from "./components/LoadingScreen";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -23,10 +24,15 @@ import Sessions from "./pages/dashboard/Sessions";
 import Credits from "./pages/dashboard/Credits";
 import MeetingRoom from "./pages/dashboard/MeetingRoom";
 import SessionReview from "./pages/dashboard/SessionReview";
+import SessionDetail from "./pages/dashboard/SessionDetail";
+import AdminPanel from "./pages/dashboard/AdminPanel";
+import ProfileSettings from "./pages/dashboard/ProfileSettings";
+import Inbox from "./pages/dashboard/Inbox";
+import StandaloneMeeting from "./pages/meet/StandaloneMeeting";
 import UserPublicProfile from "./pages/dashboard/UserPublicProfile";
 
 /**
- * SkillSwap - Peer-to-Peer Skill Exchange Platform
+ * Peersy - Peer-to-Peer Skill Exchange Platform
  *
  * Main application with routing for:
  * - Landing page
@@ -35,7 +41,7 @@ import UserPublicProfile from "./pages/dashboard/UserPublicProfile";
  */
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return <div className="text-white">Loading...</div>;
+  if (isLoading) return <LoadingScreen />;
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
@@ -50,7 +56,7 @@ function ScrollToTop() {
 export default function App() {
   return (
     <AuthProvider>
-      <Toaster position="top-right" richColors />
+      <Toaster />
       <Router>
         <ScrollToTop />
         <Routes>
@@ -63,6 +69,16 @@ export default function App() {
           <Route path="/safety" element={<SafetyGuidelines />} />
           <Route path="/terms" element={<TermsOfService />} />
 
+          {/* Standalone meeting (opens in a new tab, full-screen) */}
+          <Route
+            path="/meet/:sessionId"
+            element={
+              <ProtectedRoute>
+                <StandaloneMeeting />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Protected Dashboard Routes */}
           <Route
             path="/dashboard"
@@ -73,7 +89,9 @@ export default function App() {
             }
           >
             <Route index element={<DashboardHome />} />
+            <Route path="inbox" element={<Inbox />} />
             <Route path="profile" element={<SkillProfile />} />
+            <Route path="settings" element={<ProfileSettings />} />
             <Route path="matching" element={<Matching />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="credits" element={<Credits />} />
@@ -81,6 +99,8 @@ export default function App() {
             <Route path="users/:userId" element={<UserPublicProfile />} />
             <Route path="room/:sessionId" element={<MeetingRoom />} />
             <Route path="session/:sessionId/room" element={<MeetingRoom />} />
+            <Route path="session/:sessionId" element={<SessionDetail />} />
+            <Route path="admin" element={<AdminPanel />} />
             <Route
               path="session/:sessionId/review"
               element={<SessionReview />}
