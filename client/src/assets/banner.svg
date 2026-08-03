@@ -26,7 +26,7 @@
 
     <!-- Text Section -->
     <g transform="translate(400, 230)">
-        <text font-family="Inter, system-ui, sans-serif" font-size="96" font-weight="bold" fill="#f8fafc">SkillSwap</text>
+        <text font-family="Inter, system-ui, sans-serif" font-size="96" font-weight="bold" fill="#f8fafc">Peersy</text>
         <text x="5" y="60" font-family="Inter, system-ui, sans-serif" font-size="32" fill="#94a3b8">Peer-to-Peer Student Skill Exchange</text>
     </g>
 </svg>

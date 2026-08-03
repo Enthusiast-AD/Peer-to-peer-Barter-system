@@ -26,9 +26,9 @@ export function Navbar() {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity group">
                 <div className="w-8 h-8 relative flex items-center justify-center">
-                    <img src="/logo.svg" alt="SkillSwap" className="w-full h-full object-contain" />
+                    <img src="/peersyLogo.png" alt="Peersy" className="w-full h-full object-contain" />
                 </div>
-                <span className="font-semibold text-white text-lg tracking-tight">SkillSwap</span>
+                <span className="font-semibold text-white text-lg tracking-tight">Peersy</span>
             </Link>
 
             {/* Desktop Links */}

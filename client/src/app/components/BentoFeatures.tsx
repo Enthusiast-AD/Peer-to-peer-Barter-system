@@ -61,7 +61,7 @@ export function BentoFeatures() {
           </div>
           <div>
             <p className="text-neutral-400 text-lg leading-relaxed font-light">
-               With SkillSwap, managing your growth is fair, collaborative, and entirely credit-based. 
+               With Peersy, managing your growth is fair, collaborative, and entirely credit-based. 
                Our platform brings clarity to your learning path, simplifies matchmaking, and puts the power of 
                peer exchange right at your fingertips. <strong className="text-white font-medium">Say no to expensive tutors and rigid courses.</strong>
             </p>

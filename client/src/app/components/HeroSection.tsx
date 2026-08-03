@@ -104,8 +104,8 @@ export function HeroSection() {
               {/* Sidebar */}
               <div className="hidden md:flex flex-col w-64 border-r border-neutral-800 p-6 bg-black">
                 <div className="flex items-center gap-2 mb-10">
-                   <img src="/logo.svg" alt="SkillSwap" className="w-8 h-8 object-contain" />
-                   <span className="font-semibold text-lg tracking-tight">SkillSwap</span>
+                   <img src="/peersyLogo.png" alt="Peersy" className="w-8 h-8 object-contain" />
+                   <span className="font-semibold text-lg tracking-tight">Peersy</span>
                 </div>
                 
                 <div className="flex flex-col gap-1 mb-auto">
