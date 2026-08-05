@@ -13,6 +13,7 @@ import chatRoutes from './routes/chatRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import availabilityRoutes from './routes/availabilityRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import feedRoutes from './routes/feedRoutes.js';
 import { handleLiveKitWebhook } from './controllers/livekitWebhookController.js';
 import swaggerSpec from './swagger.js';
 import { bootstrapAdmin } from './services/adminBootstrap.js';
@@ -88,6 +89,7 @@ app.use('/api/sessions', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/feeds', feedRoutes);
 
 // LiveKit webhook - needs the raw body for signature verification, so it must
 // be parsed with express.raw instead of express.json.

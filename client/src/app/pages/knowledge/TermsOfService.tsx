@@ -1,12 +1,18 @@
 import { motion } from "motion/react";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
+import { SEO } from "../../components/SEO";
 import { Scale, FileText, CheckCircle2 } from "lucide-react";
 
 export default function TermsOfService() {
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <Navbar />
+      <SEO
+        title="Terms of Service"
+        description="Peersy terms of service: the rules of the skill exchange protocol, credit policy, user privacy, and platform conduct for students."
+        path="/terms"
+      />
 
       <main className="pt-32 pb-20 container mx-auto px-6">
         <motion.div

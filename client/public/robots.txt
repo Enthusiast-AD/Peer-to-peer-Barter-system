@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /oauth
+Disallow: /meet
+Disallow: /api
+
+Sitemap: https://peersy.vercel.app/sitemap.xml

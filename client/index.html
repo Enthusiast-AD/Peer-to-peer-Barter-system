@@ -1,17 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#050505" />
+    <meta name="color-scheme" content="dark" />
 
-  <!DOCTYPE html>
-  <html lang="en" class="dark">
-    <head>
-      <meta charset="UTF-8" />
-      <link rel="icon" type="image/png" href="/peersy.png" />
-      <link rel="apple-touch-icon" href="/peersyLogo.png" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Peersy - Skills exchange platform</title>
-    </head>
+    <title>Peersy - Free Student Skill Exchange & Barter Platform</title>
+    <meta
+      name="description"
+      content="Peersy is a free peer-to-peer skill barter platform for students. Teach skills you know, earn credits, and learn new skills from real experts through live video sessions."
+    />
+    <meta
+      name="keywords"
+      content="skill exchange, skill barter, peer to peer learning, student skill swap, teach skills online, learn new skills, knowledge exchange, barter system, video learning sessions, Peersy"
+    />
+    <meta name="author" content="Peersy" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <link rel="canonical" href="https://peersy.vercel.app/" />
 
-    <body>
-      <div id="root"></div>
-      <script type="module" src="/src/main.tsx"></script>
-    </body>
-  </html>
-  
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Peersy" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="Peersy - Free Student Skill Exchange & Barter Platform" />
+    <meta
+      property="og:description"
+      content="Teach skills you know, earn credits, and learn new skills from real experts. The free peer-to-peer skill barter platform for students."
+    />
+    <meta property="og:url" content="https://peersy.vercel.app/" />
+    <meta property="og:image" content="https://peersy.vercel.app/og-image.png" />
+    <meta property="og:image:alt" content="Peersy - skill exchange platform for students" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@peersy" />
+    <meta name="twitter:creator" content="@peersy" />
+    <meta name="twitter:title" content="Peersy - Free Student Skill Exchange & Barter Platform" />
+    <meta
+      name="twitter:description"
+      content="Teach skills you know, earn credits, and learn new skills from real experts. The free peer-to-peer skill barter platform for students."
+    />
+    <meta name="twitter:image" content="https://peersy.vercel.app/og-image.png" />
+
+    <!-- Icons -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/peersyLogo.png" />
+    <link rel="mask-icon" href="/favicon.svg" color="#4f46e5" />
+
+    <!-- Web app -->
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- RSS -->
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Peersy - Latest Skills"
+      href="https://peer-to-peer-barter-system.onrender.com/api/feeds/skills.rss"
+    />
+
+    <!-- Performance hints -->
+    <link rel="preconnect" href="https://peer-to-peer-barter-system.onrender.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Structured data: Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": "https://peersy.vercel.app/#organization",
+        "name": "Peersy",
+        "url": "https://peersy.vercel.app/",
+        "logo": "https://peersy.vercel.app/peersy.png",
+        "sameAs": [],
+        "description": "Peersy is a free peer-to-peer skill exchange platform where students teach what they know, earn credits, and learn new skills from real experts."
+      }
+    </script>
+
+    <!-- Structured data: WebSite -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": "https://peersy.vercel.app/#website",
+        "url": "https://peersy.vercel.app/",
+        "name": "Peersy",
+        "publisher": { "@id": "https://peersy.vercel.app/#organization" },
+        "inLanguage": "en"
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

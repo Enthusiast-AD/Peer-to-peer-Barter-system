@@ -222,3 +222,13 @@ Base URL: `http://localhost:8000/api`
     "comment": "Great session!"
   }
   ```
+
+## Feeds (SEO)
+
+### Latest Skills RSS
+- **Endpoint**: `/feeds/skills.rss`
+- **Method**: `GET`
+- **Description**: Public RSS 2.0 feed of the 50 most recently listed skills.
+  No auth required. Referenced from the frontend `<head>` via `<link rel="alternate" type="application/rss+xml">`.
+  Absolute links in feed items use the `SITE_URL` env var (defaults to `https://peersy.vercel.app`).
+- **Response**: `200 OK` with `Content-Type: application/rss+xml`.

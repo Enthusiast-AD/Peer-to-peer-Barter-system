@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
+import { SEO } from "../../components/SEO";
 import { HelpCircle, BookOpen, MessageSquare, Zap } from "lucide-react";
 
 const faqs = [
@@ -31,9 +32,25 @@ const faqs = [
 ];
 
 export default function HelpCenter() {
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: { "@type": "Answer", text: faq.answer },
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <Navbar />
+      <SEO
+        title="Help Center - FAQs"
+        description="Answers to common questions about the Peersy credit system, how skill bartering works, scheduling sessions, and more."
+        path="/help"
+        jsonLd={faqJsonLd}
+      />
 
       <main className="pt-32 pb-20 container mx-auto px-6">
         <motion.div
