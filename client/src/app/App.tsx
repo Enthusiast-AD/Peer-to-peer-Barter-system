@@ -16,6 +16,7 @@ import GoogleCallback from "./pages/GoogleCallback";
 import HelpCenter from "./pages/knowledge/HelpCenter";
 import SafetyGuidelines from "./pages/knowledge/SafetyGuidelines";
 import TermsOfService from "./pages/knowledge/TermsOfService";
+import PrivacyPolicy from "./pages/knowledge/PrivacyPolicy";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import DashboardHome from "./pages/dashboard/DashboardHome";
 import SkillProfile from "./pages/dashboard/SkillProfile";
@@ -53,12 +54,34 @@ function ScrollToTop() {
   return null;
 }
 
+function SyncSiteHead() {
+  useEffect(() => {
+    const apiUrl =
+      import.meta.env.VITE_API_URL ||
+      "https://peer-to-peer-barter-system.onrender.com/api";
+    const feedUrl = `${apiUrl}/feeds/skills.rss`;
+    let link = document.head.querySelector<HTMLLinkElement>(
+      'link[rel="alternate"][type="application/rss+xml"]'
+    );
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "alternate";
+      link.type = "application/rss+xml";
+      document.head.appendChild(link);
+    }
+    link.title = "Peersy - Latest Skills";
+    link.href = feedUrl;
+  }, []);
+  return null;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <Toaster />
       <Router>
         <ScrollToTop />
+        <SyncSiteHead />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
@@ -68,6 +91,7 @@ export default function App() {
           <Route path="/help" element={<HelpCenter />} />
           <Route path="/safety" element={<SafetyGuidelines />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
 
           {/* Standalone meeting (opens in a new tab, full-screen) */}
           <Route

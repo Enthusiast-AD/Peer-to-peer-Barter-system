@@ -6,6 +6,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../context/AuthContext";
+import { SEO } from "../components/SEO";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -30,7 +31,12 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 relative overflow-hidden font-sans">
-      
+      <SEO
+        title="Sign Up - Join the Skill Exchange Community"
+        description="Create a free Peersy account to start teaching skills, earning credits, and learning from real experts."
+        path="/signup"
+      />
+
       <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]" />

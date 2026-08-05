@@ -18,3 +18,4 @@ skills-lock.json
 # Local agent config
 .agents
 .claude
+.windsurf

@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
+import { SEO } from "../../components/SEO";
 import { ShieldCheck, Eye, Lock, UserCheck } from "lucide-react";
 
 const guidelines = [
@@ -34,6 +35,11 @@ export default function SafetyGuidelines() {
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <Navbar />
+      <SEO
+        title="Safety Guidelines"
+        description="Peersy safety guidelines: verify profiles, keep sessions on-platform, report issues, and protect your privacy during skill exchanges."
+        path="/safety"
+      />
 
       <main className="pt-32 pb-20 container mx-auto px-6">
         <motion.div
