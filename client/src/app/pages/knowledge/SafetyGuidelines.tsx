@@ -33,7 +33,7 @@ const guidelines = [
 
 export default function SafetyGuidelines() {
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
+    <div className="min-h-screen bg-black text-white">
       <Navbar />
       <SEO
         title="Safety Guidelines"
@@ -41,54 +41,46 @@ export default function SafetyGuidelines() {
         path="/safety"
       />
 
-      <main className="pt-32 pb-20 container mx-auto px-6">
+      <main className="pt-32 pb-24 container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-4xl mx-auto"
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="max-w-3xl mx-auto"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full border border-green-500/20 bg-green-500/5">
-            <ShieldCheck className="w-4 h-4 text-green-500" />
-            <span className="text-green-500 text-[10px] font-black tracking-widest uppercase">
-              Safety Protocol
-            </span>
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-black mb-8 tracking-tighter">
-            Safety{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">
-              First.
-            </span>
+          <p className="text-xs uppercase tracking-widest text-neutral-500 mb-4">Trust &amp; Safety</p>
+          <h1 className="text-4xl md:text-5xl font-medium tracking-tight mb-4">
+            Safety Guidelines
           </h1>
-
-          <p className="text-xl text-neutral-400 mb-16 leading-relaxed">
+          <p className="text-neutral-400 text-lg font-light mb-16 leading-relaxed">
             Your security is our highest priority. We've built technical
             safeguards and community protocols to ensure every skill exchange is
             safe and productive.
           </p>
 
           <div className="space-y-6">
-            {guidelines.map((item, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className="glass-strong rounded-3xl p-8 border border-white/5 bg-neutral-900/40 flex flex-col md:flex-row gap-8 items-start md:items-center hover:bg-neutral-900/60 transition-colors"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-green-500/10 flex-shrink-0 flex items-center justify-center border border-green-500/20">
-                  <item.icon className="w-8 h-8 text-green-500" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold mb-2 text-white">
-                    {item.title}
-                  </h3>
-                  <p className="text-neutral-400 leading-relaxed text-lg">
-                    {item.description}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+            {guidelines.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.08 }}
+                  className="rounded-2xl border border-neutral-800 bg-[#0A0A0B] p-7 flex flex-col md:flex-row gap-6 items-start md:items-center transition-colors hover:border-neutral-700"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-white/5 border border-neutral-800 shrink-0 flex items-center justify-center">
+                    <Icon className="w-6 h-6 text-neutral-300" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-medium mb-2">{item.title}</h3>
+                    <p className="text-neutral-400 leading-relaxed font-light">
+                      {item.description}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
       </main>

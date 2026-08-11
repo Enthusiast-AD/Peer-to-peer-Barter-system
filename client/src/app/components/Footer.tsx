@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Twitter, Linkedin, Facebook, Github } from "lucide-react";
+import { Github } from "lucide-react";
 
 export function Footer() {
   return (
@@ -17,10 +17,7 @@ export function Footer() {
            </div>
 
            <div className="flex gap-4 text-neutral-400">
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Peersy on Twitter" className="hover:text-white transition-colors"><Twitter className="w-4 h-4" /></a>
-              <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="Peersy on LinkedIn" className="hover:text-white transition-colors"><Linkedin className="w-4 h-4" /></a>
               <a href="https://github.com/Enthusiast-AD/Peer-to-peer-Barter-system" target="_blank" rel="noopener noreferrer" aria-label="Peersy on GitHub" className="hover:text-white transition-colors"><Github className="w-4 h-4" /></a>
-              <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Peersy on Facebook" className="hover:text-white transition-colors"><Facebook className="w-4 h-4" /></a>
            </div>
         </div>
 

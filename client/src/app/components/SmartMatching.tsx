@@ -29,13 +29,13 @@ export function SmartMatching() {
             <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             
             {/* Matching Visualization */}
-            <div className="relative mt-12 flex justify-center items-center h-64">
+            <div className="relative mt-12 flex justify-center items-center h-72 md:h-64">
                 {/* User A */}
                 <motion.div 
                     initial={{ x: -30, opacity: 0 }}
                     animate={isInView ? { x: 0, opacity: 1 } : {}}
                     transition={{ delay: 0.2 }}
-                    className="absolute left-[8%] bg-[#1A1A1C] p-4 rounded-xl border border-white/10 w-48 shadow-2xl z-10"
+                    className="absolute left-0 md:left-[6%] top-0 md:top-1/2 md:-translate-y-1/2 bg-[#1A1A1C] p-3 md:p-4 rounded-xl border border-white/10 w-36 md:w-48 shadow-2xl z-10"
                 >
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-full bg-blue-600/20 text-blue-500 flex items-center justify-center font-bold">A</div>
@@ -53,9 +53,9 @@ export function SmartMatching() {
                     </div>
                 </motion.div>
 
-                {/* Connection Line */}
+                 {/* Connection Line */}
                  <div className="absolute w-full flex justify-center items-center z-0">
-                    <svg width="300" height="60" viewBox="0 0 300 60" overflow="visible">
+                    <svg width="300" height="60" viewBox="0 0 300 60" overflow="visible" className="w-[250px] sm:w-[300px] max-w-none">
                         <defs>
                             <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                                 <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
@@ -110,7 +110,7 @@ export function SmartMatching() {
                     initial={{ x: 30, opacity: 0 }}
                     animate={isInView ? { x: 0, opacity: 1 } : {}}
                     transition={{ delay: 0.4 }}
-                    className="absolute right-[8%] bg-[#1A1A1C] p-4 rounded-xl border border-white/10 w-48 shadow-2xl z-10"
+                    className="absolute right-0 md:right-[6%] bottom-0 md:top-1/2 md:-translate-y-1/2 bg-[#1A1A1C] p-3 md:p-4 rounded-xl border border-white/10 w-36 md:w-48 shadow-2xl z-10"
                 >
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-full bg-purple-600/20 text-purple-500 flex items-center justify-center font-bold">S</div>
@@ -145,8 +145,6 @@ export function SmartMatching() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="rounded-2xl border border-white/10 bg-[#0A0A0B] p-8 h-[500px] relative overflow-hidden flex flex-col justify-end group hover:border-white/20 transition-colors"
           >
-             <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
-
              {/* Chat Interface Mockup */}
              <div className="absolute top-12 left-1/2 -translate-x-1/2 w-4/5 space-y-4">
                  <motion.div 

@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
 import { SEO } from "../../components/SEO";
-import { HelpCircle, BookOpen, MessageSquare, Zap } from "lucide-react";
+import { Zap, BookOpen, HelpCircle, MessageSquare } from "lucide-react";
 
 const faqs = [
   {
@@ -43,7 +43,7 @@ export default function HelpCenter() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
+    <div className="min-h-screen bg-black text-white">
       <Navbar />
       <SEO
         title="Help Center - FAQs"
@@ -52,47 +52,41 @@ export default function HelpCenter() {
         jsonLd={faqJsonLd}
       />
 
-      <main className="pt-32 pb-20 container mx-auto px-6">
+      <main className="pt-32 pb-24 container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
           className="max-w-4xl mx-auto"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full border border-brand-primary/20 bg-brand-primary/5">
-            <HelpCircle className="w-4 h-4 text-brand-primary" />
-            <span className="text-brand-primary text-[10px] font-black tracking-widest uppercase">
-              Support Protocol
-            </span>
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-black mb-8 tracking-tighter">
-            Help{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-blue-400">
-              Center.
-            </span>
+          <p className="text-xs uppercase tracking-widest text-neutral-500 mb-4">Support</p>
+          <h1 className="text-4xl md:text-5xl font-medium tracking-tight mb-4">
+            Help Center
           </h1>
-
-          <p className="text-xl text-neutral-400 mb-16 leading-relaxed">
-            Everything you need to know about the Peersy ecosystem. Can't
-            find what you're looking for? Reach out to our community support.
+          <p className="text-neutral-400 text-lg font-light mb-16 leading-relaxed">
+            Everything you need to know about the Peersy ecosystem. Can't find
+            what you're looking for? Reach out to our community support.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {faqs.map((faq, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className="glass-strong rounded-2xl p-8 border border-white/5 bg-neutral-900/40 relative overflow-hidden group hover:border-brand-primary/30 transition-all"
-              >
-                <div className="w-12 h-12 rounded-xl bg-brand-primary/10 flex items-center justify-center mb-6 border border-brand-primary/20 group-hover:scale-110 transition-transform">
-                  <faq.icon className="w-6 h-6 text-brand-primary" />
-                </div>
-                <h3 className="text-xl font-bold mb-4">{faq.question}</h3>
-                <p className="text-neutral-400 leading-relaxed">{faq.answer}</p>
-              </motion.div>
-            ))}
+            {faqs.map((faq, idx) => {
+              const Icon = faq.icon;
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.08 }}
+                  className="rounded-2xl border border-neutral-800 bg-[#0A0A0B] p-7 transition-colors hover:border-neutral-700"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-white/5 border border-neutral-800 flex items-center justify-center mb-5">
+                    <Icon className="w-5 h-5 text-neutral-300" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-3">{faq.question}</h3>
+                  <p className="text-neutral-400 leading-relaxed font-light">{faq.answer}</p>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
       </main>
