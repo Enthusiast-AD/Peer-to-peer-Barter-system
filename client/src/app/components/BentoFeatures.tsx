@@ -71,7 +71,7 @@ export function BentoFeatures() {
 
       <div className="container mx-auto px-6 max-w-7xl">
          {/* Bento Grid */}
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[400px]">
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-auto md:auto-rows-[400px]">
             {/* Insights Card */}
             <BentoCard 
               className="md:col-span-1"
@@ -103,7 +103,7 @@ export function BentoFeatures() {
               description="Connect with mentors and join sessions from any device, anytime."
               delay={0.2}
             >
-               <div className="relative h-full w-full flex justify-center overflow-hidden">
+               <div className="relative h-64 md:h-full w-full flex justify-center overflow-hidden">
                   <div className="w-40 h-[120%] bg-[#1A1A1C] border border-white/10 rounded-[2rem] p-3 shadow-2xl transform translate-y-8 absolute top-0 group-hover:translate-y-6 transition-transform duration-500">
                      <div className="w-full h-full bg-[#0A0A0B] rounded-[1.5rem] overflow-hidden relative">
                         <div className="absolute top-0 left-0 right-0 h-6 bg-[#0A0A0B] z-10 flex justify-center pt-2">

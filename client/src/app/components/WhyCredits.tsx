@@ -96,9 +96,6 @@ export function WhyCredits() {
       ref={ref}
       className="py-24 bg-neutral-950 relative overflow-hidden"
     >
-      {/* Grid background */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(45,212,191,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(45,212,191,0.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
-
       <div className="container mx-auto px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
